@@ -43,6 +43,13 @@ namespace grap_controller
             return CallbackReturn::FAILURE;
         }
 
+        // Optional: used in on_activate if the main port can't be opened
+        auto backup_it = info_.hardware_parameters.find("backup_port");
+        if(backup_it != info_.hardware_parameters.end())
+        {
+            backup_port_ = backup_it->second;
+        }
+
         position_commands_.reserve(info_.joints.size());
         position_states_.reserve(info_.joints.size());
         prev_position_commands_.reserve(info_.joints.size());
@@ -87,8 +94,28 @@ namespace grap_controller
         }
         catch(...)
         {
-            RCLCPP_FATAL_STREAM(rclcpp::get_logger("GrapInterface"), "Something went wrong while interacting with the port " << port_);
-            return CallbackReturn::FAILURE;
+            if(backup_port_.empty())
+            {
+                RCLCPP_FATAL_STREAM(rclcpp::get_logger("GrapInterface"), "Something went wrong while interacting with the port " << port_);
+                return CallbackReturn::FAILURE;
+            }
+
+            RCLCPP_WARN_STREAM(rclcpp::get_logger("GrapInterface"), "Could not use the port " << port_ << ", trying the backup port " << backup_port_);
+            try
+            {
+                if(grapSerial_.IsOpen())
+                {
+                    grapSerial_.Close();
+                }
+                grapSerial_.Open(backup_port_);
+                grapSerial_.SetBaudRate(LibSerial::BaudRate::BAUD_115200);
+                port_ = backup_port_;
+            }
+            catch(...)
+            {
+                RCLCPP_FATAL_STREAM(rclcpp::get_logger("GrapInterface"), "Something went wrong while interacting with the backup port " << backup_port_);
+                return CallbackReturn::FAILURE;
+            }
         }
 
         RCLCPP_INFO(rclcpp::get_logger("GrapInterface"), "Hardware started, ready to take commands");

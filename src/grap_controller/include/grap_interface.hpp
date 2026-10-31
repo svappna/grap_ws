@@ -32,6 +32,7 @@ namespace grap_controller
         private:
             LibSerial::SerialPort grapSerial_;
             std::string port_;
+            std::string backup_port_;
 
             std::vector<double> position_commands_;
             std::vector<double> prev_position_commands_;

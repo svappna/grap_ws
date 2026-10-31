@@ -25,6 +25,7 @@
             <hardware>
                 <plugin>grap_controller/GrapInterface</plugin>
                 <param name="port">/dev/ttyUSB0</param>
+                <param name="backup_port">/dev/ttyACM0</param>
             </hardware>
         </xacro:unless>
 
